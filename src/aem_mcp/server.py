@@ -79,7 +79,9 @@ def build_server(config: AemConfig | None = None) -> MCPServer:
         """One-call overview: OSGi bundles, DS components, replication queues and recent error.log findings.
 
         Each section is checked independently; a section that can't be read is reported as 'unavailable'
-        with the reason instead of failing the whole summary.
+        with the reason instead of failing the whole summary. The overall status is never 'healthy' unless
+        every section was actually checked: it is 'unknown' when nothing could be read, and 'degraded'
+        (at least) when only some sections could be read.
         """
         sections: dict[str, Any] = {}
         problems: list[str] = []
@@ -111,10 +113,18 @@ def build_server(config: AemConfig | None = None) -> MCPServer:
         severe = [f for f in sections["error_log"].get("findings", []) if f["severity"] in ("critical", "high")]
         problems += [f"error.log: [{f['severity']}] {f['title']}" for f in severe]
 
+        unchecked = [name for name, section in sections.items() if "unavailable" in section]
+        problems += [f"could not check {name}: {sections[name]['unavailable']}" for name in unchecked]
+
         critical = any(f["severity"] == "critical" for f in severe) or any(
             q["state"] == "blocked" for q in sections["replication"].get("queues", [])
         )
-        overall = "critical" if critical else "degraded" if problems else "healthy"
+        if critical:
+            overall = "critical"
+        elif len(unchecked) == len(sections):
+            overall = "unknown"
+        else:
+            overall = "degraded" if problems else "healthy"
         return {"instance": config.url, "overall": overall, "problems": problems, **sections}
 
     @mcp.tool(annotations=READ_ONLY)

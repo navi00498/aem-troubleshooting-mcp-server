@@ -35,7 +35,7 @@ flowchart LR
 
 | Tool | What it does | AEM endpoint |
 |---|---|---|
-| `aem_health_summary` | One-call triage: bundles, components, replication, error.log findings → `healthy` / `degraded` / `critical` | all below |
+| `aem_health_summary` | One-call triage: bundles, components, replication, error.log findings → `healthy` / `degraded` / `critical` (`unknown` if AEM can't be reached; never `healthy` unless every check ran) | all below |
 | `aem_connection_info` | Shows the target URL/auth mode (never the password) and checks reachability | `/system/console/bundles.json` |
 | `list_bundles` | Bundles that are not Active (or all, filtered), with hints for *Installed* vs *Resolved* | `/system/console/bundles.json` |
 | `list_component_problems` | DS components that are unsatisfied or failed activation | `/system/console/components.json` |
@@ -58,7 +58,7 @@ This server is designed to be pointed at real environments without fear:
 - **No secrets in output.** Replication agent `transportUser`/`transportPassword` are never returned and credentials
   are stripped from transport URIs. `aem_connection_info` reports the auth *mode*, not the password.
 - **Query guardrails.** QueryBuilder searches must be scoped below `/content`, `/conf`, `/apps`, `/libs`, `/etc` or
-  `/var` (at least two levels deep), `p.limit` is capped at 100 and `p.guessTotal` is always on, so an assistant
+  `/var` (at least two levels deep), `p.limit` must be 1–100 and `p.guessTotal` is always on, so an assistant
   can't trigger a repository-wide traversal.
 - **Bounded responses.** Log reads, index definitions and HTTP bodies are size-capped to protect both AEM and the
   model's context window.
@@ -74,9 +74,10 @@ Requires Python 3.10+. With [uv](https://docs.astral.sh/uv/):
 uvx --from git+https://github.com/navi00498/aem-troubleshooting-mcp-server aem-troubleshooting-mcp --version
 ```
 
-or with pip:
+or with pip, inside a virtualenv on Python 3.10+ (macOS ships 3.9; `brew install python@3.12` or `uv` gets you a newer one):
 
 ```bash
+python3 -m venv .venv && source .venv/bin/activate
 pip install git+https://github.com/navi00498/aem-troubleshooting-mcp-server
 ```
 
@@ -97,7 +98,7 @@ bundle stuck in *Installed*, a failed component, an index with `reindex=true`, a
 
 ```bash
 git clone https://github.com/navi00498/aem-troubleshooting-mcp-server && cd aem-troubleshooting-mcp-server
-pip install -e .
+uv venv && source .venv/bin/activate && uv pip install -e .   # or: python3 -m venv .venv && ... && pip install -e .
 python examples/demo_client.py
 ```
 
@@ -191,7 +192,8 @@ The request log appender is assumed to be `/logs/request.log`; pass `log_name` i
 ## Development
 
 ```bash
-uv venv && uv pip install -e . ruff
+uv venv && source .venv/bin/activate
+uv pip install -e . ruff
 python -m unittest discover -s tests -v   # 34 tests: pure analysis, HTTP client vs mock, MCP protocol in-memory
 ruff check . && ruff format --check .
 ```

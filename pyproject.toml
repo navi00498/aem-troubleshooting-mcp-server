@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aem-troubleshooting-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Read-only MCP server that lets AI assistants diagnose Adobe Experience Manager instances"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "mcp>=2.3,<3",
-    "aem-log-analyzer @ git+https://github.com/navi00498/aem-log-analyzer.git@v0.1.0",
+    "aem-log-analyzer @ git+https://github.com/navi00498/aem-log-analyzer.git@v0.1.1",
 ]
 
 [project.urls]

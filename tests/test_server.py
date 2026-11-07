@@ -70,7 +70,8 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
         data = _payload(result)
         self.assertFalse(result.is_error)
         self.assertIn("unavailable", data["bundles"])
-        self.assertEqual(data["overall"], "healthy")
+        self.assertEqual(data["overall"], "unknown")
+        self.assertTrue(any(p.startswith("could not check bundles") for p in data["problems"]))
 
     async def test_connection_info_hides_password(self):
         config = AemConfig(url=self.mock.url, user="admin", password="hunter2")
